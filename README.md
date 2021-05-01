@@ -10,3 +10,7 @@ Steps
 - Add [these](https://github.com/bhavsarpratik/vaccine_availability/blob/main/.github/workflows/cron.yaml#L32) secrets to repo settings. Use the app specific password generated above
 - Get district id from [here](https://github.com/bhavsarpratik/vaccine_availability/blob/main/districts.csv)
 - Change config in your [code](https://github.com/bhavsarpratik/vaccine_availability/blob/main/availability.py#L117)
+
+
+## Mail preview  
+![Mail](.github/mail.png?raw=true")
