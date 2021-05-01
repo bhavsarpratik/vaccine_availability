@@ -10,6 +10,7 @@ from typing import List
 import cachetools.func
 import pandas as pd
 import requests
+from retry import retry
 
 
 def get_all_district_ids():
@@ -28,6 +29,12 @@ def get_all_district_ids():
     district_df_all = district_df_all[["district_name", "district_id"]].sort_values("district_name")
     return district_df_all
 
+@cachetools.func.ttl_cache(maxsize=100, ttl=10 * 60)
+@retry(KeyError, tries=5, delay=2)
+def get_data(URL):
+    response = requests.get(URL, timeout=3)
+    data = json.loads(response.text)['centers']
+    return data
 
 def get_availability(days: int, district_ids: List[int], min_age_limit: int):
     base = datetime.datetime.today()
@@ -40,8 +47,7 @@ def get_availability(days: int, district_ids: List[int], min_age_limit: int):
     for district_id in district_ids:
         print(f"checking for INP_DATE:{INP_DATE} & DIST_ID:{district_id}")
         URL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id={}&date={}".format(district_id, INP_DATE)
-        response = requests.get(URL, timeout=3)
-        data = json.loads(response.text)['centers']
+        data = get_data(URL)
         df = pd.DataFrame(data)
         if len(df):
             df = df.explode("sessions")
