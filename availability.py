@@ -29,38 +29,32 @@ def get_all_district_ids():
     return district_df_all
 
 
-def get_availability(days: int, district_ids: List[int]):
+def get_availability(days: int, district_ids: List[int], max_age_criteria: int):
     base = datetime.datetime.today()
     date_list = [base + datetime.timedelta(days=x) for x in range(days)]
     date_str = [x.strftime("%d-%m-%Y") for x in date_list]
+    INP_DATE = date_str[-1]
 
     all_date_df = None
-    df = None
-    for INP_DATE in date_str:
-        for DIST_ID in district_ids:
-            print(f"checking for INP_DATE:{INP_DATE} & DIST_ID:{DIST_ID}")
-            try:
-                URL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id={}&date={}".format(
-                    DIST_ID, INP_DATE)
-                response = requests.get(URL)
-                data = json.loads(response.text)['centers']
-                df = pd.DataFrame(data)
-                df['min_age_limit'] = df.sessions.apply(lambda x: [{d["date"]: d['min_age_limit']} for d in x])
-                df = df.explode("min_age_limit")
-                df["date"] = df['min_age_limit'].apply(lambda x: list(x.keys())[0])
-                df["min_age_limit"] = df['min_age_limit'].apply(lambda x: list(x.values())[0])
-                df = df[
-                    ["date", "min_age_limit", "name", "state_name", "district_name", "block_name", "pincode", "fee_type"]]
-                if all_date_df is not None:
-                    all_date_df = pd.concat([all_date_df, df])
-                else:
-                    all_date_df = df
-            except Exception as ex:
-                print("Getting error in fetching data " + ex)
 
-    if df is not None:
-        df.drop(["block_name"], axis=1)
-    return df
+    for district_id in district_ids:
+        print(f"checking for INP_DATE:{INP_DATE} & DIST_ID:{district_id}")
+        URL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id={}&date={}".format(district_id, INP_DATE)
+        response = requests.get(URL)
+        data = json.loads(response.text)['centers']
+        df = pd.DataFrame(data)
+        df = df.explode("sessions")
+        df['min_age_limit'] = df.sessions.apply(lambda x: x['min_age_limit'])
+        df['available_capacity'] = df.sessions.apply(lambda x: x['available_capacity'])
+        df['date'] = df.sessions.apply(lambda x: x['date'])
+        df = df[["date", "min_age_limit", "available_capacity", "name", "state_name", "district_name", "block_name", "pincode", "fee_type"]]
+        if all_date_df is not None:
+            all_date_df = pd.concat([all_date_df, df])
+        else:
+            all_date_df = df
+
+    df = df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "available_capacity"], ascending=[True, False])
+    return df[df.min_age_limit < max_age_criteria]
 
 
 def send_email(data_frame, age):
@@ -114,12 +108,10 @@ def send_email(data_frame, age):
 if __name__ == "__main__":
     Ahmedabad = 154
     Ahmedabad_Corporation = 770
-    DIST_IDS = [Ahmedabad, Ahmedabad_Corporation]
+    dist_ids = [Ahmedabad, Ahmedabad_Corporation]
     next_n_days = 5
     max_age_criteria = 100
 
-    availability_data = get_availability(next_n_days, DIST_IDS)
-    if availability_data is not None:
-        availability_data = availability_data[availability_data.min_age_limit < max_age_criteria]
-
+    availability_data = get_availability(next_n_days, dist_ids, max_age_criteria)
+    print(availability_data)
     send_email(availability_data, max_age_criteria)
