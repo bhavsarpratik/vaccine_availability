@@ -1,3 +1,5 @@
+import datetime
+import json
 import os
 import smtplib
 import ssl
@@ -5,11 +7,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import List
 
-import requests
-import datetime
-
-import json
 import pandas as pd
+import requests
 
 
 def get_all_district_ids():
@@ -47,7 +46,7 @@ def get_availability(days: int, district_ids: List[int], max_age_criteria: int):
         df['min_age_limit'] = df.sessions.apply(lambda x: x['min_age_limit'])
         df['available_capacity'] = df.sessions.apply(lambda x: x['available_capacity'])
         df['date'] = df.sessions.apply(lambda x: x['date'])
-        df = df[["date", "min_age_limit", "available_capacity", "name", "state_name", "district_name", "block_name", "pincode", "fee_type"]]
+        df = df[["date", "min_age_limit", "available_capacity", "pincode", "name", "state_name", "district_name", "block_name", "fee_type"]]
         if all_date_df is not None:
             all_date_df = pd.concat([all_date_df, df])
         else:
@@ -110,7 +109,7 @@ if __name__ == "__main__":
     Ahmedabad_Corporation = 770
     dist_ids = [Ahmedabad, Ahmedabad_Corporation]
     next_n_days = 5
-    max_age_criteria = 100
+    max_age_criteria = 50
 
     availability_data = get_availability(next_n_days, dist_ids, max_age_criteria)
     print(availability_data)
