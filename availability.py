@@ -15,7 +15,7 @@ import requests
 def get_all_district_ids():
     district_df_all = None
     for state_code in range(1, 40):
-        response = requests.get("https://cdn-api.co-vin.in/api/v2/admin/location/districts/{}".format(state_code))
+        response = requests.get("https://cdn-api.co-vin.in/api/v2/admin/location/districts/{}".format(state_code), timeout=3)
         district_df = pd.DataFrame(json.loads(response.text))
         district_df = pd.json_normalize(district_df['districts'])
         if district_df_all is None:
@@ -40,7 +40,7 @@ def get_availability(days: int, district_ids: List[int], min_age_limit: int):
     for district_id in district_ids:
         print(f"checking for INP_DATE:{INP_DATE} & DIST_ID:{district_id}")
         URL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id={}&date={}".format(district_id, INP_DATE)
-        response = requests.get(URL)
+        response = requests.get(URL, timeout=3)
         data = json.loads(response.text)['centers']
         df = pd.DataFrame(data)
         if len(df):
