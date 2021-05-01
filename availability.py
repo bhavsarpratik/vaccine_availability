@@ -56,7 +56,7 @@ def get_availability(days: int, district_ids: List[int]):
                 else:
                     all_date_df = df
             except Exception as ex:
-                print("Getting error in fetching data " + ex)
+                print("Getting error in fetching data {}".format(ex))
 
     if df is not None:
         df.drop(["block_name"], axis=1)
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     Ahmedabad_Corporation = 770
     DIST_IDS = [Ahmedabad, Ahmedabad_Corporation]
     next_n_days = 5
+    # Set the value max age criteria
     max_age_criteria = 100
 
     availability_data = get_availability(next_n_days, DIST_IDS)
