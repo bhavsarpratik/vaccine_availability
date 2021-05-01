@@ -5,9 +5,8 @@ name: cron
 
 on:
   schedule:
-    # * is a special character in YAML so you have to quote this string
-    # - cron: '* 0,6,12,18 * * *'
-    - cron: '* * * * *'
+    - cron: '0 0,6,12,18 * * *' # Every 6 hours
+    # - cron: '* * * * *' # Every ~5 min
 
 jobs:
   build:
