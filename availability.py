@@ -7,6 +7,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import List
 
+import cachetools.func
 import pandas as pd
 import requests
 
@@ -28,7 +29,7 @@ def get_all_district_ids():
     return district_df_all
 
 
-def get_availability(days: int, district_ids: List[int], max_age_criteria: int):
+def get_availability(days: int, district_ids: List[int], min_age_limit: int):
     base = datetime.datetime.today()
     date_list = [base + datetime.timedelta(days=x) for x in range(days)]
     date_str = [x.strftime("%d-%m-%Y") for x in date_list]
@@ -52,8 +53,8 @@ def get_availability(days: int, district_ids: List[int], max_age_criteria: int):
         else:
             all_date_df = df
 
-    df = df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "available_capacity"], ascending=[True, False])
-    return df[df.min_age_limit < max_age_criteria]
+    all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "district_name", "available_capacity"], ascending=[True, True, False])
+    return all_date_df[all_date_df.min_age_limit >= min_age_limit]
 
 
 def send_email(data_frame, age):
@@ -109,8 +110,8 @@ if __name__ == "__main__":
     Ahmedabad_Corporation = 770
     dist_ids = [Ahmedabad, Ahmedabad_Corporation]
     next_n_days = 5
-    max_age_criteria = 50
+    min_age_limit = 50
 
-    availability_data = get_availability(next_n_days, dist_ids, max_age_criteria)
+    availability_data = get_availability(next_n_days, dist_ids, min_age_limit)
     print(availability_data)
-    send_email(availability_data, max_age_criteria)
+    send_email(availability_data, min_age_limit)
