@@ -43,18 +43,21 @@ def get_availability(days: int, district_ids: List[int], min_age_limit: int):
         response = requests.get(URL)
         data = json.loads(response.text)['centers']
         df = pd.DataFrame(data)
-        df = df.explode("sessions")
-        df['min_age_limit'] = df.sessions.apply(lambda x: x['min_age_limit'])
-        df['available_capacity'] = df.sessions.apply(lambda x: x['available_capacity'])
-        df['date'] = df.sessions.apply(lambda x: x['date'])
-        df = df[["date", "min_age_limit", "available_capacity", "pincode", "name", "state_name", "district_name", "block_name", "fee_type"]]
-        if all_date_df is not None:
-            all_date_df = pd.concat([all_date_df, df])
-        else:
-            all_date_df = df
+        if len(df):
+            df = df.explode("sessions")
+            df['min_age_limit'] = df.sessions.apply(lambda x: x['min_age_limit'])
+            df['available_capacity'] = df.sessions.apply(lambda x: x['available_capacity'])
+            df['date'] = df.sessions.apply(lambda x: x['date'])
+            df = df[["date", "min_age_limit", "available_capacity", "pincode", "name", "state_name", "district_name", "block_name", "fee_type"]]
+            if all_date_df is not None:
+                all_date_df = pd.concat([all_date_df, df])
+            else:
+                all_date_df = df
 
-    all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "district_name", "available_capacity"], ascending=[True, True, False])
-    return all_date_df[all_date_df.min_age_limit >= min_age_limit]
+    if all_date_df is not None:
+        all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "district_name", "available_capacity"], ascending=[True, True, False])
+        return all_date_df[all_date_df.min_age_limit >= min_age_limit]
+    return pd.DataFrame()
 
 
 def send_email(data_frame, age):
