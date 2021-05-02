@@ -3,7 +3,7 @@ import streamlit as st
 import pgeocode
 from availability import get_availability
 import math
-
+from st_download_button import download_button
 
 @st.cache
 def cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid):
@@ -36,14 +36,18 @@ def main():
     st.title('Vaccine Availability')
     st.markdown('Contribute on [GitHub](https://github.com/bhavsarpratik/vaccine_availability)')
     pincode_msg = f"Pincode {pincode_search} not recognized. Will show all results of the district"
+    pincode_success = False
     if pincode_search != "":
         nomi = pgeocode.Nominatim('in')
         if not math.isnan(nomi.query_postal_code(str(pincode_search)).latitude):
             pincode_msg = f"Pincode {pincode_search} found. Will show closest results to you"
+            pincode_success = True
         else:
             pincode_search = ""
-
-    st.text(pincode_msg)
+    if pincode_success:
+        st.success(pincode_msg)
+    else:
+        st.warning(pincode_msg)
     search = st.button("Search")
     if search:
         df = cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid)
@@ -60,6 +64,13 @@ def main():
             st.dataframe(df)
         else:
             st.subheader("No available slots in any of the centers.")
+        download_button_str = download_button(
+            df,
+            "upcoming_slots.csv",
+            f"Click here to download slots as csv",
+            pickle_it=False,
+        )
+        st.markdown(download_button_str, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
