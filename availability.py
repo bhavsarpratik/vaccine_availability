@@ -119,8 +119,7 @@ if __name__ == "__main__":
     Ahmedabad_Corporation = 770
     dist_ids = [Ahmedabad, Ahmedabad_Corporation]
     next_n_days = 5
-    min_age_limit = 50
+    min_age_limit = 18
 
     availability_data = get_availability(next_n_days, dist_ids, min_age_limit)
-    print(availability_data)
     send_email(availability_data, min_age_limit)

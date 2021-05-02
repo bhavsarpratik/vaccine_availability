@@ -5,8 +5,8 @@ name: cron
 
 on:
   schedule:
-#     - cron: '0 0/3 * * *' # Every 3 hours
-    - cron: '* * * * *' # Every ~5 min
+    - cron: '0 0/6 * * *' # Every 6 hours
+    # - cron: '* * * * *' # Every ~5 min
 
 jobs:
   build:
