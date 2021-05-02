@@ -29,7 +29,7 @@ def get_all_district_ids():
     district_df_all = district_df_all[["district_name", "district_id"]].sort_values("district_name")
     return district_df_all
 
-@cachetools.func.ttl_cache(maxsize=100, ttl=10 * 60)
+@cachetools.func.ttl_cache(maxsize=100, ttl=30 * 60)
 @retry(KeyError, tries=5, delay=2)
 def get_data(URL):
     response = requests.get(URL, timeout=3)
@@ -61,8 +61,10 @@ def get_availability(days: int, district_ids: List[int], min_age_limit: int):
                 all_date_df = df
 
     if all_date_df is not None:
-        all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "district_name", "available_capacity"], ascending=[True, True, False])
-        return all_date_df[all_date_df.min_age_limit >= min_age_limit]
+        all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["date", "min_age_limit", "district_name", "available_capacity"], ascending=[True, True, True, False])
+        all_date_df = all_date_df[all_date_df.min_age_limit >= min_age_limit]
+        all_date_df = all_date_df[all_date_df.available_capacity>0]
+        return all_date_df
     return pd.DataFrame()
 
 
