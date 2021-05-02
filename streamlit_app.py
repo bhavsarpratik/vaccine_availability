@@ -22,7 +22,6 @@ district_ids = [mapper[val] for val in option]
 
 try:
     df = get_availability(district_ids, min_age_limit)
-    df.index += 1
     st.table(df)
 except:
     st.error('Unable to fetch data. Try after a few minutes')

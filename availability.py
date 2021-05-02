@@ -61,6 +61,7 @@ def get_availability(district_ids: List[int], min_age_limit: int):
         all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "available_capacity", "date", "district_name"], ascending=[True, False, True, True])
         all_date_df = all_date_df[all_date_df.min_age_limit >= min_age_limit]
         all_date_df = all_date_df[all_date_df.available_capacity>0]
+        all_date_df.set_index('date', inplace=True)
         return all_date_df
     return pd.DataFrame()
 
