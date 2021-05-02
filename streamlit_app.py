@@ -15,7 +15,7 @@ for index, row in data.iterrows():
 avail_districts = list(mapper.keys())
 
 min_age_limit = st.sidebar.selectbox('Min age limit', [18, 45])
-option = st.sidebar.multiselect('How would you like to be contacted?', avail_districts, "Ahmedabad Corporation")
+option = st.sidebar.multiselect('District', avail_districts, "Ahmedabad Corporation")
 
 district_ids = [mapper[val] for val in option]
 
