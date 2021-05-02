@@ -14,7 +14,7 @@ for index, row in data.iterrows():
     mapper[row['district_name']] = row['district_id']
 avail_districts = list(mapper.keys())
 
-min_age_limit = st.sidebar.selectbox('Min age limit', [18, 45])
+min_age_limit = st.sidebar.radio('Min age limit', [18, 45])
 option = st.sidebar.multiselect('How would you like to be contacted?', avail_districts, "Ahmedabad Corporation")
 
 district_ids = [mapper[val] for val in option]
@@ -22,6 +22,8 @@ district_ids = [mapper[val] for val in option]
 try:
     df = get_availability(next_n_days, district_ids, min_age_limit)
     df.index += 1
+    strng = "District Name:\t" + ",  ".join(option)
+    st.success(strng)
     st.table(df)
 except:
-    st.markdown('Unable to fetch data. Try after a few minutes')
+    st.error('Unable to fetch data. Try after a few minutes')
