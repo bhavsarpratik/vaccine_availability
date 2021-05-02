@@ -6,7 +6,7 @@ from availability import get_availability
 st.title('Vaccine Availability')
 st.markdown('Contribute on [GitHub](https://github.com/bhavsarpratik/vaccine_availability)')
 
-next_n_days = 3
+next_n_days = st.sidebar.slider('Next n days',min_value=1,max_value=30,step=1)
 
 data = pd.read_csv('districts.csv')
 mapper = {}
