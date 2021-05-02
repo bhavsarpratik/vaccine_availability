@@ -5,12 +5,13 @@ import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List
+from typing import List, Optional
 
 import cachetools.func
 import pandas as pd
 import requests
 from retry import retry
+import pgeocode
 
 
 def get_all_district_ids():
@@ -36,13 +37,13 @@ def get_data(URL):
     data = json.loads(response.text)['centers']
     return data
 
-def get_availability(days: int, district_ids: List[int], min_age_limit: int):
+def get_availability(days: int, district_ids: List[int], min_age_limit: int, pincode_search: Optional[str] = None):
     base = datetime.datetime.today()
     date_list = [base + datetime.timedelta(days=x) for x in range(days)]
     date_str = [x.strftime("%d-%m-%Y") for x in date_list]
     INP_DATE = date_str[-1]
 
-    all_date_df = None
+    all_date_df = []
 
     for district_id in district_ids:
         print(f"checking for INP_DATE:{INP_DATE} & DIST_ID:{district_id}")
@@ -52,59 +53,83 @@ def get_availability(days: int, district_ids: List[int], min_age_limit: int):
         if len(df):
             df = df.explode("sessions")
             df['min_age_limit'] = df.sessions.apply(lambda x: x['min_age_limit'])
-            df['available_capacity'] = df.sessions.apply(lambda x: x['available_capacity'])
+            df['available_capacity'] = df.sessions.apply(lambda x: x['available_capacity']).astype(int)
             df['date'] = df.sessions.apply(lambda x: x['date'])
-            df = df[["date", "min_age_limit", "available_capacity", "pincode", "name", "state_name", "district_name", "block_name", "fee_type"]]
-            if all_date_df is not None:
-                all_date_df = pd.concat([all_date_df, df])
-            else:
-                all_date_df = df
-
-    if all_date_df is not None:
-        all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "district_name", "available_capacity"], ascending=[True, True, False])
-        return all_date_df[all_date_df.min_age_limit >= min_age_limit]
+            df['vaccine'] = df.sessions.apply(lambda x: x['vaccine'])
+            df = df[["date", "min_age_limit", "available_capacity", "pincode", "name", "state_name", "district_name", "block_name", "fee_type", "vaccine"]]
+            all_date_df.append(df)
+            # if all_date_df is not None:
+            #     all_date_df = pd.concat([all_date_df, df])
+            # else:
+            #     all_date_df = df
+    if len(all_date_df)>0:
+        all_date_df = pd.concat(all_date_df)
+        all_date_df = all_date_df.drop(["block_name"], axis=1)
+        if pincode_search is not None and pincode_search!="":
+            dist = pgeocode.GeoDistance('in')
+            all_date_df['distance'] = df.pincode.apply(lambda x: dist.query_postal_code(str(pincode_search), x)).fillna(9999).round(0)
+            all_date_df.sort_values(["distance", "available_capacity"], ascending=[True, False], inplace=True)
+        else:
+            all_date_df.sort_values(["available_capacity"], ascending=[False], inplace=True)
+        all_date_df = all_date_df[all_date_df.min_age_limit <= min_age_limit]
+        all_date_df = all_date_df[all_date_df.available_capacity > 0]
+        # Human Readable Column names
+        all_date_df.rename(columns={
+            "name": "Center",
+            "district_name": "District",
+            "fee_type": "Free/Paid",
+            "min_age_limit": "Min Eligible Age",
+            "pincode": "Pin Code",
+            "distance": "Distance from you(km)",
+            "available_capacity": "Available Slots"
+        }, inplace=True)
+        return all_date_df
     return pd.DataFrame()
 
 
 def send_email(data_frame, age):
     # Used most of code from https://realpython.com/python-send-email/ and modified
-    if data_frame is None or len(data_frame.index) == 0:
-        print("Empty Data")
-        return
 
     sender_email = os.environ['SENDER_EMAIL']
     receiver_email = os.environ['RECEIVER_EMAIL']
-
     message = MIMEMultipart("alternative")
-    message["Subject"] = "Availability for Max Age {} Count {}".format(age, len(data_frame.index))
     message["From"] = sender_email
     message["To"] = receiver_email
+    if data_frame is None or len(data_frame.index) == 0:
+        print("Empty Data")
+        message["Subject"] = "Availability for Max Age {} is 0 <EOM>".format(age, len(data_frame.index))
+        text = ""
+        part1 = MIMEText(text, "plain")
+        message.attach(part1)
 
-    text = """\
-    Hi,
-    Please refer vaccine availability"""
+    else:
 
-    html_header = """\
-    <html>
-      <body>
-        <p>
+        message["Subject"] = "Availability for Max Age {} Count {}".format(age, len(data_frame.index))
+        text = """\
+        Hi,
+        Please refer vaccine availability"""
 
-    """
+        html_header = """\
+        <html>
+        <body>
+            <p>
 
-    html_footer = """\
-    
-        </p>
-      </body>
-    </html>
-    """
+        """
 
-    html = "{}{}{}".format(html_header, data_frame.to_html(), html_footer)
+        html_footer = """\
+        
+            </p>
+        </body>
+        </html>
+        """
 
-    part1 = MIMEText(text, "plain")
-    part2 = MIMEText(html, "html")
+        html = "{}{}{}".format(html_header, data_frame.to_html(), html_footer)
 
-    message.attach(part1)
-    message.attach(part2)
+        part1 = MIMEText(text, "plain")
+        part2 = MIMEText(html, "html")
+
+        message.attach(part1)
+        message.attach(part2)
 
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:

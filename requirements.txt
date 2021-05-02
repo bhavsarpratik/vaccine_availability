@@ -2,3 +2,4 @@ requests
 pandas
 streamlit
 retry
+pgeocode
