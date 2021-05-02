@@ -22,7 +22,7 @@ district_ids = [mapper[val] for val in option]
 try:
     df = get_availability(next_n_days, district_ids, min_age_limit)
     df.index += 1
-    strng = "District Name:\t" + ",  ".join(option)
+    strng = "District :\t" + ",  ".join(option)
     st.success(strng)
     st.table(df)
 except:
