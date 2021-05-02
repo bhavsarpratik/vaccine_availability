@@ -1,6 +1,10 @@
 # Vaccine Availability With Python
 Get vaccine availability in India
 
+## [Streamlit app](https://share.streamlit.io/bhavsarpratik/vaccine_availability/main)  
+![Mail](.github/streamlit.png?raw=true")  
+
+## CRON job for mail
 Script runs every 6 hours. You can change this [here](https://github.com/bhavsarpratik/vaccine_availability/blob/main/.github/workflows/cron.yaml#L8)  
 
 Steps
