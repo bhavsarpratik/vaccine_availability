@@ -143,7 +143,7 @@ if __name__ == "__main__":
     tvm = 296
     kannur = 297
     dist_ids = [tvm]
-    next_n_days = 5
+    next_n_days = 1
     min_age_limit = 40
 
     availability_data = get_availability(next_n_days, dist_ids, min_age_limit)
