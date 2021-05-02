@@ -9,9 +9,7 @@ st.markdown('Contribute on [GitHub](https://github.com/bhavsarpratik/vaccine_ava
 next_n_days = 3
 
 data = pd.read_csv('districts.csv')
-mapper = {}
-for index, row in data.iterrows():
-    mapper[row['district_name']] = row['district_id']
+mapper = dict(data.values)
 avail_districts = list(mapper.keys())
 
 min_age_limit = st.sidebar.selectbox('Min age limit', [18, 45])
