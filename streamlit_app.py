@@ -4,7 +4,6 @@ import streamlit as st
 from availability import get_availability
 
 st.title('Vaccine Availability')
-st.markdown('<-- Select district in the left side bar')
 st.markdown('Contribute on [GitHub](https://github.com/bhavsarpratik/vaccine_availability)')
 
 @st.cache
@@ -15,8 +14,8 @@ data = get_data()
 
 mapper = dict(data.values)
 avail_districts = list(mapper.keys())
-min_age_limit = st.sidebar.radio('Min age limit', [18, 45])
-option = st.sidebar.multiselect('District', avail_districts, "Ahmedabad Corporation")
+min_age_limit = st.radio('Min age limit', [18, 45])
+option = st.multiselect('District', avail_districts, "Ahmedabad Corporation")
 
 district_ids = [mapper[val] for val in option]
 
