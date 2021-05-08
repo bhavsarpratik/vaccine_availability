@@ -35,7 +35,6 @@ def get_all_district_ids():
 @cachetools.func.ttl_cache(maxsize=100, ttl=30 * 60)
 @retry(KeyError, tries=5, delay=2)
 def get_data(URL):
-    headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36'}
     response = requests.get(URL, timeout=3, headers=headers)
     data = json.loads(response.text)['centers']
     return data
