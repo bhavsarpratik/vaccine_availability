@@ -13,11 +13,13 @@ import requests
 from retry import retry
 import pgeocode
 
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+
 
 def get_all_district_ids():
     district_df_all = None
     for state_code in range(1, 40):
-        response = requests.get("https://cdn-api.co-vin.in/api/v2/admin/location/districts/{}".format(state_code), timeout=3)
+        response = requests.get("https://cdn-api.co-vin.in/api/v2/admin/location/districts/{}".format(state_code), timeout=3, headers=headers)
         district_df = pd.DataFrame(json.loads(response.text))
         district_df = pd.json_normalize(district_df['districts'])
         if district_df_all is None:
@@ -30,7 +32,7 @@ def get_all_district_ids():
     district_df_all = district_df_all[["district_name", "district_id"]].sort_values("district_name")
     return district_df_all
 
-@cachetools.func.ttl_cache(maxsize=100, ttl=10 * 60)
+@cachetools.func.ttl_cache(maxsize=100, ttl=30 * 60)
 @retry(KeyError, tries=5, delay=2)
 def get_data(URL):
     headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36'}
@@ -38,10 +40,10 @@ def get_data(URL):
     data = json.loads(response.text)['centers']
     return data
 
+
 def get_availability(district_ids: List[int], min_age_limit: int, pincode_search: Optional[str] = None, show_empty_slots: bool= False):
     INP_DATE = datetime.datetime.today().strftime("%d-%m-%Y")
     all_date_df = []
-
     for district_id in district_ids:
         print(f"checking for INP_DATE:{INP_DATE} & DIST_ID:{district_id}")
         URL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id={}&date={}".format(district_id, INP_DATE)
@@ -81,6 +83,7 @@ def get_availability(district_ids: List[int], min_age_limit: int, pincode_search
             "distance": "Distance from you(km)",
             "available_capacity": "Available Slots"
         }, inplace=True)
+
         return all_date_df
     return pd.DataFrame()
 
@@ -140,14 +143,12 @@ def send_email(data_frame, age, send_empty_email=False):
 
 
 if __name__ == "__main__":
-    tvm = 296
-    kannur = 297
-    dist_ids = [tvm]
-    # next_n_days = 1
-    min_age_limit = 40
+    Ahmedabad = 154
+    Ahmedabad_Corporation = 770
+    dist_ids = [Ahmedabad, Ahmedabad_Corporation]
+    min_age_limit = 18
     send_empty_email = False
-    pincode = 695024
+    pincode = None
     show_empty_slots = False
     availability_data = get_availability(dist_ids, min_age_limit, pincode, show_empty_slots)
-    print(availability_data)
     send_email(availability_data, min_age_limit, send_empty_email = False)

@@ -24,7 +24,6 @@ def get_district_info():
 def main():
     mapper = get_district_info()
     avail_districts = list(mapper.keys())
-
     min_age_limit = st.sidebar.number_input('Age', min_value=18, max_value=100, value=35)
     # next_n_days = st.sidebar.number_input('Search next N Days', value=3, min_value=1, max_value=100)
     # next_n_days = 1
