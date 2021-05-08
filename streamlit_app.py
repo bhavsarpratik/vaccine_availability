@@ -6,8 +6,8 @@ import math
 from st_download_button import download_button
 
 @st.cache
-def cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid):
-    df= get_availability(next_n_days, district_ids, min_age_limit, pincode_search)
+def cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid, show_empty_slots):
+    df= get_availability(next_n_days, district_ids, min_age_limit, pincode_search, show_empty_slots)
     if len(df)>0:
         df = df[df['Free/Paid'].isin(free_paid)]
     return df
@@ -32,6 +32,7 @@ def main():
     district_ids = [mapper[val] for val in districts]
     pincode_search = st.sidebar.text_input(label='Search Near your Pincode', value="")
     free_paid = st.sidebar.multiselect(label="Free or Paid", options=["Free", "Paid"], default=["Free", "Paid"])
+    show_empty_slots = st.sidebar.checkbox(label="Show Full Slots?", value=False)
 
     st.title('Vaccine Availability')
     st.markdown('Contribute on [GitHub](https://github.com/bhavsarpratik/vaccine_availability)')
@@ -50,7 +51,7 @@ def main():
         st.warning(pincode_msg)
     search = st.button("Search")
     if search:
-        df = cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid)
+        df = cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid, show_empty_slots)
         if len(df)>0:
             # df = get_availability(next_n_days, district_ids, min_age_limit)
             idx_cols = ['Center','District', 'Free/Paid','Min Eligible Age', 'Pin Code']
@@ -62,15 +63,15 @@ def main():
             else:
                 df.sort_values(['Center'], ascending=[True], inplace=True)
             st.dataframe(df)
+            download_button_str = download_button(
+                df,
+                "upcoming_slots.csv",
+                f"Click here to download slots as csv",
+                pickle_it=False,
+            )
+            st.markdown(download_button_str, unsafe_allow_html=True)
         else:
             st.subheader("No available slots in any of the centers.")
-        download_button_str = download_button(
-            df,
-            "upcoming_slots.csv",
-            f"Click here to download slots as csv",
-            pickle_it=False,
-        )
-        st.markdown(download_button_str, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

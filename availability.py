@@ -33,11 +33,12 @@ def get_all_district_ids():
 @cachetools.func.ttl_cache(maxsize=100, ttl=10 * 60)
 @retry(KeyError, tries=5, delay=2)
 def get_data(URL):
-    response = requests.get(URL, timeout=3)
+    headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.90 Safari/537.36'}
+    response = requests.get(URL, timeout=3, headers=headers)
     data = json.loads(response.text)['centers']
     return data
 
-def get_availability(days: int, district_ids: List[int], min_age_limit: int, pincode_search: Optional[str] = None):
+def get_availability(days: int, district_ids: List[int], min_age_limit: int, pincode_search: Optional[str] = None, show_empty_slots: bool= False):
     base = datetime.datetime.today()
     date_list = [base + datetime.timedelta(days=x) for x in range(days)]
     date_str = [x.strftime("%d-%m-%Y") for x in date_list]
@@ -72,7 +73,8 @@ def get_availability(days: int, district_ids: List[int], min_age_limit: int, pin
         else:
             all_date_df.sort_values(["available_capacity"], ascending=[False], inplace=True)
         all_date_df = all_date_df[all_date_df.min_age_limit <= min_age_limit]
-        all_date_df = all_date_df[all_date_df.available_capacity > 0]
+        if not show_empty_slots:
+            all_date_df = all_date_df[all_date_df.available_capacity > 0]
         # Human Readable Column names
         all_date_df.rename(columns={
             "name": "Center",
@@ -87,7 +89,7 @@ def get_availability(days: int, district_ids: List[int], min_age_limit: int, pin
     return pd.DataFrame()
 
 
-def send_email(data_frame, age):
+def send_email(data_frame, age, send_empty_email=False):
     # Used most of code from https://realpython.com/python-send-email/ and modified
 
     sender_email = os.environ['SENDER_EMAIL']
@@ -95,12 +97,14 @@ def send_email(data_frame, age):
     message = MIMEMultipart("alternative")
     message["From"] = sender_email
     message["To"] = receiver_email
+    to_send_email = True
     if data_frame is None or len(data_frame.index) == 0:
         print("Empty Data")
         message["Subject"] = "Availability for Max Age {} is 0 <EOM>".format(age, len(data_frame.index))
         text = ""
         part1 = MIMEText(text, "plain")
         message.attach(part1)
+        to_send_email = send_empty_email
 
     else:
 
@@ -130,13 +134,13 @@ def send_email(data_frame, age):
 
         message.attach(part1)
         message.attach(part2)
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(sender_email, os.environ['SENDER_PASSWORD'])
-        server.sendmail(
-            sender_email, receiver_email, message.as_string()
-        )
+    if to_send_email:
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(sender_email, os.environ['SENDER_PASSWORD'])
+            server.sendmail(
+                sender_email, receiver_email, message.as_string()
+            )
 
 
 if __name__ == "__main__":
@@ -145,7 +149,9 @@ if __name__ == "__main__":
     dist_ids = [tvm]
     next_n_days = 1
     min_age_limit = 40
-
-    availability_data = get_availability(next_n_days, dist_ids, min_age_limit)
+    send_empty_email = False
+    pincode = 695024
+    show_empty_slots = False
+    availability_data = get_availability(next_n_days, dist_ids, min_age_limit, pincode, show_empty_slots)
     print(availability_data)
-    send_email(availability_data, min_age_limit)
+    send_email(availability_data, min_age_limit, send_empty_email = False)
