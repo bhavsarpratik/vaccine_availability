@@ -2,4 +2,5 @@ requests
 pandas
 streamlit
 retry
+watchdog
 pgeocode

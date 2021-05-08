@@ -6,8 +6,8 @@ import math
 from st_download_button import download_button
 
 @st.cache
-def cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid, show_empty_slots):
-    df= get_availability(next_n_days, district_ids, min_age_limit, pincode_search, show_empty_slots)
+def cached_availability(district_ids, min_age_limit, pincode_search, free_paid, show_empty_slots):
+    df= get_availability(district_ids, min_age_limit, pincode_search, show_empty_slots)
     if len(df)>0:
         df = df[df['Free/Paid'].isin(free_paid)]
     return df
@@ -27,7 +27,7 @@ def main():
 
     min_age_limit = st.sidebar.number_input('Age', min_value=18, max_value=100, value=35)
     # next_n_days = st.sidebar.number_input('Search next N Days', value=3, min_value=1, max_value=100)
-    next_n_days = 1
+    # next_n_days = 1
     districts = st.sidebar.multiselect('Select the District', avail_districts, "Ahmedabad Corporation")
     district_ids = [mapper[val] for val in districts]
     pincode_search = st.sidebar.text_input(label='Search Near your Pincode', value="")
@@ -51,7 +51,7 @@ def main():
         st.warning(pincode_msg)
     search = st.button("Search")
     if search:
-        df = cached_availability(next_n_days, district_ids, min_age_limit, pincode_search, free_paid, show_empty_slots)
+        df = cached_availability(district_ids, min_age_limit, pincode_search, free_paid, show_empty_slots)
         if len(df)>0:
             # df = get_availability(next_n_days, district_ids, min_age_limit)
             idx_cols = ['Center','District', 'Free/Paid','Min Eligible Age', 'Pin Code']

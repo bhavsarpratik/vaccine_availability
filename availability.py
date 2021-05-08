@@ -38,12 +38,8 @@ def get_data(URL):
     data = json.loads(response.text)['centers']
     return data
 
-def get_availability(days: int, district_ids: List[int], min_age_limit: int, pincode_search: Optional[str] = None, show_empty_slots: bool= False):
-    base = datetime.datetime.today()
-    date_list = [base + datetime.timedelta(days=x) for x in range(days)]
-    date_str = [x.strftime("%d-%m-%Y") for x in date_list]
-    INP_DATE = date_str[-1]
-
+def get_availability(district_ids: List[int], min_age_limit: int, pincode_search: Optional[str] = None, show_empty_slots: bool= False):
+    INP_DATE = datetime.datetime.today().strftime("%d-%m-%Y")
     all_date_df = []
 
     for district_id in district_ids:
@@ -147,11 +143,11 @@ if __name__ == "__main__":
     tvm = 296
     kannur = 297
     dist_ids = [tvm]
-    next_n_days = 1
+    # next_n_days = 1
     min_age_limit = 40
     send_empty_email = False
     pincode = 695024
     show_empty_slots = False
-    availability_data = get_availability(next_n_days, dist_ids, min_age_limit, pincode, show_empty_slots)
+    availability_data = get_availability(dist_ids, min_age_limit, pincode, show_empty_slots)
     print(availability_data)
     send_email(availability_data, min_age_limit, send_empty_email = False)
