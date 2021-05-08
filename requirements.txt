@@ -3,3 +3,4 @@ pandas
 streamlit
 retry
 watchdog
+pgeocode
