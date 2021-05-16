@@ -12,13 +12,15 @@ import pandas as pd
 import requests
 from retry import retry
 
-headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
 
 def get_all_district_ids():
     district_df_all = None
     for state_code in range(1, 40):
-        response = requests.get("https://cdn-api.co-vin.in/api/v2/admin/location/districts/{}".format(state_code), timeout=3, headers=headers)
+        response = requests.get(
+            "https://cdn-api.co-vin.in/api/v2/admin/location/districts/{}".format(state_code), timeout=3, headers=headers)
         district_df = pd.DataFrame(json.loads(response.text))
         district_df = pd.json_normalize(district_df['districts'])
         if district_df_all is None:
@@ -28,8 +30,10 @@ def get_all_district_ids():
 
         district_df_all.district_id = district_df_all.district_id.astype(int)
 
-    district_df_all = district_df_all[["district_name", "district_id"]].sort_values("district_name")
+    district_df_all = district_df_all[[
+        "district_name", "district_id"]].sort_values("district_name")
     return district_df_all
+
 
 @cachetools.func.ttl_cache(maxsize=100, ttl=30 * 60)
 @retry(KeyError, tries=5, delay=2)
@@ -38,6 +42,7 @@ def get_data(URL):
     data = json.loads(response.text)['centers']
     return data
 
+
 def get_availability(district_ids: List[int], min_age_limit: int):
     INP_DATE = datetime.datetime.today().strftime("%d-%m-%Y")
 
@@ -45,24 +50,29 @@ def get_availability(district_ids: List[int], min_age_limit: int):
 
     for district_id in district_ids:
         print(f"checking for INP_DATE:{INP_DATE} & DIST_ID:{district_id}")
-        URL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id={}&date={}".format(district_id, INP_DATE)
+        URL = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id={}&date={}".format(
+            district_id, INP_DATE)
         data = get_data(URL)
         df = pd.DataFrame(data)
         if len(df):
             df = df.explode("sessions")
-            df['min_age_limit'] = df.sessions.apply(lambda x: x['min_age_limit'])
-            df['available_capacity'] = df.sessions.apply(lambda x: x['available_capacity'])
+            df['min_age_limit'] = df.sessions.apply(
+                lambda x: x['min_age_limit'])
+            df['available_capacity'] = df.sessions.apply(
+                lambda x: x['available_capacity'])
             df['date'] = df.sessions.apply(lambda x: x['date'])
-            df = df[["date", "min_age_limit", "available_capacity", "pincode", "name", "state_name", "district_name", "block_name", "fee_type"]]
+            df = df[["date", "min_age_limit", "available_capacity", "pincode",
+                     "name", "state_name", "district_name", "block_name", "fee_type"]]
             if all_date_df is not None:
                 all_date_df = pd.concat([all_date_df, df])
             else:
                 all_date_df = df
 
     if all_date_df is not None:
-        all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(["min_age_limit", "available_capacity", "date", "district_name"], ascending=[True, False, True, True])
-        all_date_df = all_date_df[all_date_df.min_age_limit >= min_age_limit]
-        all_date_df = all_date_df[all_date_df.available_capacity>0]
+        all_date_df = all_date_df.drop(["block_name"], axis=1).sort_values(
+            ["min_age_limit", "available_capacity", "date", "district_name"], ascending=[True, False, True, True])
+        all_date_df = all_date_df[all_date_df.min_age_limit == min_age_limit]
+        all_date_df = all_date_df[all_date_df.available_capacity > 0]
         all_date_df.set_index('date', inplace=True)
         return all_date_df
     return pd.DataFrame()
@@ -78,7 +88,8 @@ def send_email(data_frame, age):
     receiver_email = os.environ['RECEIVER_EMAIL']
 
     message = MIMEMultipart("alternative")
-    message["Subject"] = "Availability for Max Age {} Count {}".format(age, len(data_frame.index))
+    message["Subject"] = "Availability for Max Age {} Count {}".format(
+        age, len(data_frame.index))
     message["From"] = sender_email
     message["To"] = receiver_email
 
